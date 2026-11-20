@@ -3,9 +3,10 @@
 Python 3.10 ou plus récent, sans dépendance externe.
 
 ```sh
-python connect4.py                  # humain (X, premier joueur) contre agent aléatoire (O)
-python connect4.py --mode agents    # deux agents aléatoires
-python connect4.py --mode agents --seed 42  # partie reproductible
+python puissance4.py                  # humain (X, premier joueur) contre agent aléatoire (O)
+python puissance4.py --mode agents    # deux agents aléatoires
+python puissance4.py --agent-o mcts   # humain contre MCTS
+python puissance4.py --mode agents --agent-x mcts --simulations 500 --seed 42
 python -m unittest discover -s tests
 ```
 

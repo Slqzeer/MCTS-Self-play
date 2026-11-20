@@ -1,8 +1,9 @@
-"""Puissance 4 en terminal : humain contre agent ou deux agents aléatoires."""
+"""Puissance 4 en terminal : humain contre agent ou deux agents."""
 
 import argparse
 import random
 
+from mcts import mcts_move
 from vendor import board as rules
 
 ROWS, COLUMNS, ALIGNMENT = 6, 7, 4
@@ -42,7 +43,15 @@ def main():
     parser.add_argument('--mode', choices=['humain', 'agents'], default='humain',
                         help='humain contre agent (défaut), ou deux agents')
     parser.add_argument('--seed', type=int, help='graine des coups aléatoires')
+    parser.add_argument('--agent-x', choices=['aleatoire', 'mcts'], default='aleatoire',
+                        help='agent du premier joueur en mode agents')
+    parser.add_argument('--agent-o', choices=['aleatoire', 'mcts'], default='aleatoire',
+                        help='agent du second joueur')
+    parser.add_argument('--simulations', type=int, default=500,
+                        help='nombre de simulations par coup MCTS (défaut : 500)')
     args = parser.parse_args()
+    if args.simulations < 1:
+        parser.error('--simulations doit être supérieur à zéro')
     rng = random.Random(args.seed)
     game = Game()
     game.display()
@@ -58,7 +67,11 @@ def main():
                 print('\nPartie interrompue.')
                 return
         else:
-            column = rng.choice(game.legal_moves())
+            agent = args.agent_x if game.player == 1 else args.agent_o
+            if agent == 'mcts':
+                column = mcts_move(game, rng, simulations=args.simulations)
+            else:
+                column = rng.choice(game.legal_moves())
             print(f'Agent {game.player} joue colonne {column + 1}.')
             game.play(column)
         game.display()
