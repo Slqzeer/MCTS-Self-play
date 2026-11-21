@@ -31,3 +31,22 @@ Pour augmenter l’échantillon ou modifier la grille, choisir un autre dossier 
 ```sh
 uv run benchmark.py --simulations 16 64 256 --exploration 0.5 1 2 --paires 50 --seed 100 --output resultats-50
 ```
+
+## Échecs · mesurer le coût du self-play
+
+Depuis la racine, lancer trois parties entre deux agents MCTS sur l'échiquier standard.
+
+```sh
+uv run echecs.py
+uv run --with chess==1.11.2 python -m unittest discover -s tests
+```
+
+Le lot utilise les graines 42 à 44, 24 simulations aléatoires complètes par décision et la constante UCB1 √2. La bibliothèque python-chess applique les règles. Les agents jouent jusqu'au mat ou à une nulle automatique (pat, matériel insuffisant, répétition quintuple ou règle des 75 coups). Ils ne réclament pas les nulles facultatives.
+
+Le [journal du lot](resultats/echecs.jsonl) contient les coups en notation UCI, le résultat, le motif de fin et la durée de chaque partie. Chaque demi-coup correspond à une position pour laquelle le MCTS a pris une décision. Le débit affiché inclut la recherche et les coups joués. Pour estimer une campagne avec un autre budget, refaire la mesure avec ce budget et un fichier de sortie distinct.
+
+```sh
+uv run echecs.py --parties 5 --simulations 64 --seed 100 --output resultats/echecs-64.jsonl
+```
+
+**Choix pour l'étape 5.** On retient les échecs standard pour un premier lot d'entraînement. Sous Windows avec Python 3.14.0, les trois parties ont produit 1 197 décisions en 321,69 s, soit 3,72 positions/s. À ce débit, générer 10 000 positions prendrait environ 45 minutes sur un seul processus. Pour un objectif exprimé en parties, compter environ 3 h pour 100 parties, ou 30 h pour 1 000. Ces projections portent sur la génération seule, au même budget de recherche. Les parties du lot ont duré de 297 à 598 demi-coups et se sont toutes terminées par une nulle, deux par matériel insuffisant et une par la règle des 75 coups.

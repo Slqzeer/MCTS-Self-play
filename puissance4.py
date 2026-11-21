@@ -2,6 +2,7 @@
 
 import argparse
 import random
+from copy import copy
 
 from mcts import mcts_move
 from vendor import board as rules
@@ -15,6 +16,11 @@ class Game:
         self.player = 1
         self.winner = 0
         self.draw = False
+
+    def copy(self):
+        state = copy(self)
+        state.board = [row.copy() for row in self.board]
+        return state
 
     def legal_moves(self):
         if self.winner or self.draw:

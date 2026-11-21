@@ -1,7 +1,6 @@
 """Recherche Monte-Carlo avec sélection UCB1 et simulations aléatoires."""
 
 import math
-from copy import copy
 
 
 class _Node:
@@ -23,7 +22,7 @@ class _Node:
 
 
 def mcts_move(game, rng, simulations=500, exploration=math.sqrt(2)):
-    """Renvoie la colonne la plus visitée, sans modifier la partie."""
+    """Renvoie le coup le plus visité, sans modifier la partie."""
     if simulations < 1:
         raise ValueError("Le nombre de simulations doit être positif.")
     if not math.isfinite(exploration) or exploration < 0:
@@ -33,8 +32,7 @@ def mcts_move(game, rng, simulations=500, exploration=math.sqrt(2)):
         raise ValueError("La partie est terminée.")
 
     for _ in range(simulations):
-        state = copy(game)
-        state.board = [row.copy() for row in game.board]
+        state = game.copy()
         node = root
         while not node.untried and node.children:
             node = node.select_child(exploration)
