@@ -50,3 +50,19 @@ uv run echecs.py --parties 5 --simulations 64 --seed 100 --output resultats/eche
 ```
 
 **Choix pour l'étape 5.** On retient les échecs standard pour un premier lot d'entraînement. Sous Windows avec Python 3.14.0, les trois parties ont produit 1 197 décisions en 321,69 s, soit 3,72 positions/s. À ce débit, générer 10 000 positions prendrait environ 45 minutes sur un seul processus. Pour un objectif exprimé en parties, compter environ 3 h pour 100 parties, ou 30 h pour 1 000. Ces projections portent sur la génération seule, au même budget de recherche. Les parties du lot ont duré de 297 à 598 demi-coups et se sont toutes terminées par une nulle, deux par matériel insuffisant et une par la règle des 75 coups.
+
+## Échecs · entraîner et comparer le réseau
+
+Depuis la racine du dépôt, relancer l’expérience dans un dossier distinct des résultats publiés.
+
+```sh
+uv run selfplay.py --output resultats/essai-selfplay
+uv run --with chess==1.11.2 --with numpy==2.3.4 python -m unittest discover -s tests
+```
+
+Le protocole par défaut effectue deux itérations de quatre parties de self-play (graines 42 à 49). Chaque recherche PUCT effectue huit simulations par coup. Aux feuilles, un réseau NumPy à une couche cachée de 32 unités donne une probabilité aux coups légaux et évalue la position pour le joueur au trait. En self-play, on ajoute du bruit de Dirichlet à la racine et on tire le coup proportionnellement aux visites. Après chaque lot, le réseau s’entraîne pendant trois époques sur toutes les positions accumulées. Le lot suivant utilise les poids appris.
+
+Le [journal d’entraînement](resultats/selfplay/positions.jsonl.gz) contient une partie par ligne JSON compressée. Chaque position indique sa FEN, le coup joué, les visites des coups explorés et la valeur finale (+1 victoire, 0 nulle, −1 défaite pour le joueur au trait). Diviser les visites par leur somme donne la cible de policy. Les coups légaux absents ont une cible nulle. Les [poids entraînés](resultats/selfplay/reseau.npz) se rechargent avec `Network.load` dans `selfplay.py`.
+
+Le tournoi fige le réseau, désactive le bruit et choisit le coup le plus visité. Il l’oppose au MCTS UCB1 à rollouts aléatoires de l’étape 4, avec huit simulations par coup pour chacun. Chaque graine de tournoi (50 et 51) sert à deux parties, une par couleur pour le réseau. Le [journal du tournoi](resultats/selfplay/tournoi.jsonl) consigne les coups et les durées de décision des deux agents. La [synthèse](resultats/selfplay/synthese.json) donne le score du réseau et le temps moyen par décision de chaque agent, calculé sur l’ensemble de ses coups.
+**Résultat du premier tournoi.** Le réseau marque 2 points sur 4 avec quatre nulles. Sur cette machine, il prend en moyenne 4,60 ms par coup, contre 106,49 ms pour les rollouts. Les huit parties d’entraînement comptaient déjà six nulles. Ce petit échantillon met en évidence un écart de temps de calcul et laisse la différence de force de jeu indéterminée.

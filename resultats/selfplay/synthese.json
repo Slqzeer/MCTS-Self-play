@@ -1,0 +1,19 @@
+{
+  "parametres": {
+    "iterations": 2,
+    "parties": 4,
+    "epochs": 3,
+    "simulations": 8,
+    "paires": 2,
+    "seed": 42
+  },
+  "positions": 2632,
+  "victoires": 0,
+  "nuls": 4,
+  "defaites": 0,
+  "points": 2.0,
+  "ms_par_coup": {
+    "reseau": 4.599599468634246,
+    "rollouts": 106.49408342190141
+  }
+}
