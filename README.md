@@ -1,5 +1,19 @@
 # Puissance 4
 
+## Interface graphique
+
+```sh
+uv run interface.py puissance4                         # humain (rouge) contre MCTS, 500 simulations
+uv run interface.py puissance4 --humain second --agent aleatoire
+uv run interface.py echecs                             # humain (blancs) contre le réseau entraîné, horizon 60
+uv run interface.py echecs --humain second --agent rollouts
+uv run interface.py echecs --humain aucun              # deux agents s'affrontent
+uv run interface.py echecs --demi-coups 0              # échecs standard
+```
+
+L’interface utilise tkinter, fourni avec Python. Au Puissance 4, on clique sur une colonne. Aux échecs, on clique sur une pièce : ses cases d’arrivée possibles s’affichent. Un second clic joue le coup. La promotion se fait toujours en dame. Le dernier coup est surligné, et la ligne d’état indique qui a la main et le nombre de demi-coups restants dans la variante. Le bouton « Nouvelle partie » relance une partie. Pendant que l’agent calcule, la fenêtre ne répond pas.
+
+
 Le jeu en terminal utilise Python 3.10 ou plus récent, sans dépendance externe.
 
 ```sh
