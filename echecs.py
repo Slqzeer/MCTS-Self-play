@@ -15,14 +15,29 @@ import chess
 from mcts import mcts_move
 
 
+VALUES = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9}
+
+
 class ChessGame:
-    def __init__(self, board=None):
+    def __init__(self, board=None, max_plies=0):
+        """max_plies > 0 : la partie s'arrête après ce nombre de demi-coups et le matériel tranche."""
         self.board = chess.Board() if board is None else board
-        self.outcome = self.board.outcome()
+        self.max_plies = max_plies
+        self.outcome = self._outcome()
+
+    def _outcome(self):
+        outcome = self.board.outcome()
+        if outcome or not self.max_plies or len(self.board.move_stack) < self.max_plies:
+            return outcome
+        balance = sum(VALUES.get(p.piece_type, 0) * (1 if p.color else -1)
+                      for p in self.board.piece_map().values())
+        if balance == 0:
+            return chess.Outcome(chess.Termination.VARIANT_DRAW, None)
+        return chess.Outcome(chess.Termination.VARIANT_WIN, balance > 0)
 
     def copy(self):
         # L'historique est nécessaire à la détection des répétitions.
-        return ChessGame(self.board.copy())
+        return ChessGame(self.board.copy(), self.max_plies)
 
     @property
     def player(self):
@@ -43,7 +58,7 @@ class ChessGame:
         if self.outcome or not self.board.is_legal(move):
             raise ValueError("Coup illégal")
         self.board.push(move)
-        self.outcome = self.board.outcome()
+        self.outcome = self._outcome()
 
 
 def play_game(seed, simulations):

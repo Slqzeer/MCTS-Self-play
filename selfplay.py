@@ -130,8 +130,8 @@ def search(game, network, simulations, rng, training=False):
     return {m: child.visits for m, (child, _) in root.children.items()}
 
 
-def self_play(network, simulations, seed):
-    game = ChessGame()
+def self_play(network, simulations, seed, max_plies=0):
+    game = ChessGame(max_plies=max_plies)
     rng = random.Random(seed)
     positions = []
     while not game.outcome:
@@ -152,8 +152,8 @@ def example(row):
     return features(board), move_indices(board, moves), counts / counts.sum(), row['value']
 
 
-def match(network, simulations, seed, neural_color):
-    game = ChessGame()
+def match(network, simulations, seed, neural_color, max_plies=0):
+    game = ChessGame(max_plies=max_plies)
     rng = random.Random(seed)
     baseline_rng = random.Random(~seed)
     elapsed = {'reseau': [], 'rollouts': []}
@@ -176,11 +176,11 @@ def match(network, simulations, seed, neural_color):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name, default in [('iterations', 2), ('parties', 4), ('epochs', 3),
-                          ('simulations', 8), ('paires', 2), ('seed', 42)]:
-        parser.add_argument('--' + name, type=int, default=default)
+                          ('simulations', 8), ('paires', 2), ('seed', 42), ('demi_coups', 0)]:
+        parser.add_argument('--' + name.replace('_', '-'), type=int, default=default)
     parser.add_argument('--output', type=Path, default=Path('resultats/selfplay'))
     args = parser.parse_args()
-    if min(args.iterations, args.parties, args.epochs, args.simulations, args.paires) < 1 or args.seed < 0:
+    if min(args.iterations, args.parties, args.epochs, args.simulations, args.paires) < 1 or min(args.seed, args.demi_coups) < 0:
         parser.error('Les quantités doivent être positives et la graine positive ou nulle.')
     args.output.mkdir(parents=True, exist_ok=True)
     network = Network(args.seed)
@@ -190,7 +190,7 @@ def main():
     with gzip.open(args.output / 'positions.jsonl.gz', 'wt', encoding='utf-8') as stream:
         for iteration in range(args.iterations):
             for _ in range(args.parties):
-                record = self_play(network, args.simulations, seed)
+                record = self_play(network, args.simulations, seed, args.demi_coups)
                 print(json.dumps(dict(iteration=iteration + 1, **record)), file=stream)
                 examples.extend(example(row) for row in record['positions'])
                 seed += 1
@@ -202,7 +202,7 @@ def main():
     with (args.output / 'tournoi.jsonl').open('w', encoding='utf-8') as stream:
         for pair_seed in range(seed, seed + args.paires):
             for color in (chess.WHITE, chess.BLACK):
-                record = match(network, args.simulations, pair_seed, color)
+                record = match(network, args.simulations, pair_seed, color, args.demi_coups)
                 print(json.dumps(record), file=stream, flush=True)
                 matches.append(record)
                 print(pair_seed, record['couleur_reseau'], record['resultat'], flush=True)

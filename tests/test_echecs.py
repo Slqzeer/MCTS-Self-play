@@ -34,3 +34,17 @@ class ChessTests(unittest.TestCase):
         self.assertFalse(game.draw)
         with self.assertRaises(ValueError):
             mcts_move(game, random.Random(0), 1)
+
+    def test_ply_cap_adjudicates_on_material(self):
+        game = ChessGame(max_plies=4)
+        for uci in ['e2e4', 'd7d5', 'e4d5']:
+            game.play(chess.Move.from_uci(uci))
+        self.assertIsNone(game.outcome)
+        self.assertEqual(game.copy().max_plies, 4)
+        game.play(chess.Move.from_uci('d8d5'))
+        self.assertTrue(game.draw)
+        game = ChessGame(max_plies=3)
+        for uci in ['e2e4', 'd7d5', 'e4d5']:
+            game.play(chess.Move.from_uci(uci))
+        self.assertEqual(game.winner, chess.WHITE)
+        self.assertEqual(game.legal_moves(), [])
