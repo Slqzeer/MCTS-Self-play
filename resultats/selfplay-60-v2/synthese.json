@@ -1,0 +1,22 @@
+{
+  "parametres": {
+    "iterations": 20,
+    "parties": 100,
+    "epochs": 2,
+    "simulations": 64,
+    "paires": 50,
+    "seed": 42,
+    "demi_coups": 60,
+    "cachees": 128,
+    "cible": "marge"
+  },
+  "positions": 115482,
+  "victoires": 75,
+  "nuls": 10,
+  "defaites": 15,
+  "points": 80.0,
+  "ms_par_coup": {
+    "reseau": 20.46965387454494,
+    "rollouts": 122.41706843300271
+  }
+}

@@ -229,7 +229,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     games = parser.add_subparsers(dest='jeu', required=True)
     for name, agents, simulations in [('puissance4', ['mcts', 'aleatoire'], 500),
-                                      ('echecs', ['reseau', 'rollouts'], 32)]:
+                                      ('echecs', ['reseau', 'rollouts'], 256)]:
         sub = games.add_parser(name)
         sub.add_argument('--humain', choices=['premier', 'second', 'aucun'], default='premier',
                          help="l'humain joue en premier (défaut), en second, ou deux agents s'affrontent")
@@ -237,7 +237,7 @@ def main():
         sub.add_argument('--simulations', type=int, default=simulations)
         sub.add_argument('--seed', type=int)
         if name == 'echecs':
-            sub.add_argument('--poids', type=Path, default=Path('resultats/selfplay-60/reseau.npz'))
+            sub.add_argument('--poids', type=Path, default=Path('resultats/selfplay-60-v2/reseau.npz'))
             sub.add_argument('--demi-coups', type=int, default=60,
                              help='horizon de la variante, 0 pour les échecs standard (défaut : 60)')
     args = parser.parse_args()

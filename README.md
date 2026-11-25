@@ -5,7 +5,7 @@
 ```sh
 uv run interface.py puissance4                         # humain (rouge) contre MCTS, 500 simulations
 uv run interface.py puissance4 --humain second --agent aleatoire
-uv run interface.py echecs                             # humain (blancs) contre le réseau entraîné, horizon 60
+uv run interface.py echecs                             # humain (blancs) contre le réseau v2, 256 simulations, horizon 60
 uv run interface.py echecs --humain second --agent rollouts
 uv run interface.py echecs --humain aucun              # deux agents s'affrontent
 uv run interface.py echecs --demi-coups 0              # échecs standard
@@ -114,4 +114,28 @@ uv run jouer_echecs.py --couleur noirs --agent rollouts    # humain (noirs) cont
 uv run jouer_echecs.py --demi-coups 0 --simulations 200    # échecs standard, sans limite de demi-coups
 ```
 
-Saisir les coups en notation algébrique (`e4`, `Nf3`, `O-O`) ou en UCI (`e2e4`). Un coup illégal est refusé. Par défaut, le réseau charge les poids de `resultats/selfplay-60/reseau.npz`. L’option `--poids` en désigne d’autres.
+Saisir les coups en notation algébrique (`e4`, `Nf3`, `O-O`) ou en UCI (`e2e4`). Un coup illégal est refusé. Par défaut, l’agent est le réseau v2 (`resultats/selfplay-60-v2/reseau.npz`), avec 256 simulations par coup. L’option `--poids` en désigne d’autres.
+
+## Échecs · réseau v2, plus fort
+
+Le premier réseau perdait facilement contre un joueur débutant. Le diagnostic a montré que sa fonction de valeur mesurait mal le matériel. En position initiale, les blancs privés de leur dame ne perdaient que 0,13 de valeur. Avec 32 simulations, l’agent ne prenait même pas une dame offerte. Plus de simulations n’y changeaient rien, puisque la recherche suivait plus loin une évaluation fausse. La v2 apporte trois changements :
+
+- **Un réseau plus large** : `--cachees 128` au lieu de 32 unités cachées.
+- **Une cible de valeur plus riche** : `--cible marge`. Au lieu de +1, 0 ou −1, chaque position reçoit l’écart de matériel final, vu du joueur au trait et ramené entre −1 et 1 par tanh(écart / 3). Un mat garde la cible ±1. Dans la variante, le signe de cet écart décide justement de la partie.
+- **Plus de self-play** : 2 000 parties à 64 simulations par coup, au lieu de 500 à 32.
+
+```sh
+uv run selfplay.py --demi-coups 60 --cachees 128 --cible marge --iterations 20 --parties 100 --epochs 2 --simulations 64 --paires 50 --output resultats/selfplay-60-v2
+uv run duel.py resultats/selfplay-60-v2/reseau.npz resultats/selfplay-60/reseau.npz
+uv run duel.py resultats/selfplay-60-v2/reseau.npz resultats/selfplay-60-v2/reseau.npz --simulations-a 256 --paires 25 --seed 4000
+```
+
+La campagne a pris 69 minutes et produit 115 482 positions. `duel.py` oppose deux réseaux, chacun jouant une fois de chaque couleur par graine.
+
+| Mesure | Résultat |
+|---|---|
+| v2 contre MCTS à rollouts, 64 simulations chacun, 100 parties | 75 V, 10 N, 15 D, **80 points** |
+| **v2 contre v1**, 64 simulations chacun, 100 parties (graines 3000 à 3049) | 56 V, 21 N, 23 D, **66,5 points** |
+| v2 à 256 simulations contre v2 à 64, 50 parties (graines 4000 à 4024) | 30 V, 4 N, 16 D, **32 points** (70 ms par coup) |
+
+Le score de la v2 contre les rollouts ne se compare pas directement aux 83,5 points de la v1, car l’adversaire avait deux fois plus de simulations. Le duel direct est la mesure qui tranche. La valeur de la v2 sépare aussi bien mieux le matériel : l’écart entre une dame en moins et une dame en plus passe de 0,37 à 1,15, et celui d’un cavalier de 0,03 à 0,33. Le réseau reste petit (une couche cachée) et ne voit que deux ou trois demi-coups de tactique. Il ne faut pas en attendre le niveau d’un vrai moteur d’échecs.

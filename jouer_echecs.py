@@ -36,8 +36,8 @@ def main():
     parser.add_argument('--couleur', choices=['blancs', 'noirs'], default='blancs',
                         help="couleur de l'humain (défaut : blancs)")
     parser.add_argument('--agent', choices=['rollouts', 'reseau'], default='reseau')
-    parser.add_argument('--poids', type=Path, default=Path('resultats/selfplay-60/reseau.npz'))
-    parser.add_argument('--simulations', type=int, default=32)
+    parser.add_argument('--poids', type=Path, default=Path('resultats/selfplay-60-v2/reseau.npz'))
+    parser.add_argument('--simulations', type=int, default=256)
     parser.add_argument('--demi-coups', type=int, default=60,
                         help='horizon de la variante, 0 pour les échecs standard (défaut : 60)')
     parser.add_argument('--seed', type=int)
