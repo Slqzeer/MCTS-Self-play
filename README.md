@@ -80,8 +80,10 @@ Le self-play joue 500 parties (graines 42 à 541), soit 28 885 positions. Le tou
 Le témoin oppose aux rollouts un réseau **non entraîné**, sur les mêmes graines de tournoi, avec le même budget. Il mesure ce que PUCT apporte avant tout apprentissage.
 
 ```sh
-uv run --with chess==1.11.2 --with numpy==2.3.4 python -c "import chess; from selfplay import Network, match; s = [match(Network(42), 32, g, c, 60)['score_reseau'] for g in range(542, 592) for c in (chess.WHITE, chess.BLACK)]; print(sum(s))"
+uv run comparaison.py resultats/selfplay-60
 ```
+
+Le script relit les paramètres de la campagne dans `synthese.json`. Il joue le témoin s’il n’existe pas encore (environ 5 minutes) et l’enregistre dans `temoin.json`. Il trace ensuite le [graphique de comparaison](resultats/selfplay-60/comparaison.png).
 
 | Agent PUCT contre MCTS à rollouts | Victoires | Nuls | Défaites | Points sur 100 |
 |---|---|---|---|---|
