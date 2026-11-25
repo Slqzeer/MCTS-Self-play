@@ -38,7 +38,8 @@ class App:
         self.next_turn()
 
     def human_turn(self):
-        return self.args.humain != 'aucun' and self.game.player == self.human_player()
+        return (self.args.humain != 'aucun' and not self.over()
+                and self.game.player == self.human_player())
 
     def next_turn(self):
         if self.over():
@@ -140,8 +141,18 @@ class ChessApp(App):
         return self.game.outcome is not None
 
     def result_text(self):
-        outcome = self.game.outcome
-        return f'Fin : {outcome.result()} ({outcome.termination.name.lower()})'
+        outcome, T = self.game.outcome, self.chess.Termination
+        reason = {T.CHECKMATE: 'échec et mat', T.STALEMATE: 'pat',
+                  T.INSUFFICIENT_MATERIAL: 'matériel insuffisant',
+                  T.SEVENTYFIVE_MOVES: 'règle des 75 coups',
+                  T.FIVEFOLD_REPETITION: 'répétition de la position',
+                  T.VARIANT_WIN: f'plus de matériel après {self.game.max_plies} demi-coups',
+                  T.VARIANT_DRAW: f'matériel égal après {self.game.max_plies} demi-coups',
+                  }.get(outcome.termination, outcome.termination.name.lower())
+        if outcome.winner is None:
+            return f'Partie nulle : {reason} ({outcome.result()}).'
+        winner = 'Les blancs gagnent' if outcome.winner else 'Les noirs gagnent'
+        return f'{winner} : {reason} ({outcome.result()}).'
 
     def agent_move(self):
         if self.args.agent == 'rollouts':
@@ -204,8 +215,14 @@ class ChessApp(App):
                               fill='#555', outline='')
             piece = board.piece_at(square)
             if piece:
-                c.create_text(x + s / 2, y + s / 2, text=piece.unicode_symbol(),
-                              font=('Segoe UI Symbol', int(s * 0.6)), fill='black')
+                # Glyphe plein teinté, puis contour noir pour les blancs.
+                font = ('Segoe UI Symbol', int(s * 0.6))
+                solid = chess.Piece(piece.piece_type, chess.BLACK).unicode_symbol()
+                c.create_text(x + s / 2, y + s / 2, text=solid, font=font,
+                              fill='white' if piece.color else 'black')
+                if piece.color:
+                    c.create_text(x + s / 2, y + s / 2, text=piece.unicode_symbol(),
+                                  font=font, fill='black')
 
 
 def main():

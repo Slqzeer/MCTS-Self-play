@@ -47,6 +47,17 @@ class InterfaceTests(unittest.TestCase):
         app.agent_turn(app.game)
         self.assertEqual(len(app.game.board.move_stack), 2)
 
+    def test_chess_ignores_clicks_after_ply_limit(self):
+        app = chess_app()
+        app.game = ChessGame(max_plies=2)
+        for uci in ['e2e4', 'e7e5']:
+            app.game.play(chess.Move.from_uci(uci))
+        app.next_turn()
+        self.assertFalse(app.human_turn())
+        app.on_click(SimpleNamespace(x=5 * app.SQUARE + 5, y=7 * app.SQUARE + 5))  # Fou f1.
+        self.assertIsNone(app.selected)
+        self.assertEqual(app.status['text'], 'Partie nulle : matériel égal après 2 demi-coups (1/2-1/2).')
+
     def test_chess_promotes_to_queen_and_flips_for_black(self):
         app = chess_app()
         app.game = ChessGame(chess.Board('8/P6k/8/8/8/8/8/K7 w - - 0 1'))
