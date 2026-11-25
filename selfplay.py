@@ -15,7 +15,7 @@ from time import perf_counter
 import chess
 import numpy as np
 
-from echecs import ChessGame
+from echecs import ChessGame, material
 from mcts import mcts_move
 
 
@@ -45,11 +45,11 @@ def move_indices(board, moves):
 
 
 class Network:
-    def __init__(self, seed):
+    def __init__(self, seed, hidden=32):
         rng = np.random.default_rng(seed)
-        self.encoder = rng.normal(0, 0.04, (796, 32))
-        self.policy = rng.normal(0, 0.04, (32, 134))
-        self.value = rng.normal(0, 0.04, 32)
+        self.encoder = rng.normal(0, 0.04, (796, hidden))
+        self.policy = rng.normal(0, 0.04, (hidden, 134))
+        self.value = rng.normal(0, 0.04, hidden)
 
     @classmethod
     def load(cls, path):
@@ -130,7 +130,7 @@ def search(game, network, simulations, rng, training=False):
     return {m: child.visits for m, (child, _) in root.children.items()}
 
 
-def self_play(network, simulations, seed, max_plies=0):
+def self_play(network, simulations, seed, max_plies=0, target='resultat'):
     game = ChessGame(max_plies=max_plies)
     rng = random.Random(seed)
     positions = []
@@ -142,6 +142,9 @@ def self_play(network, simulations, seed, max_plies=0):
         game.play(move)
     for ply, row in enumerate(positions):
         row['value'] = 0 if game.draw else (1 if game.winner == (ply % 2 == 0) else -1)
+        if target == 'marge' and game.outcome.termination != chess.Termination.CHECKMATE:
+            # Écart de matériel final, du point de vue du joueur au trait, ramené dans ]-1, 1[.
+            row['value'] = math.tanh(material(game.board) * (1 if ply % 2 == 0 else -1) / 3)
     return dict(seed=seed, resultat=game.outcome.result(), positions=positions)
 
 
@@ -178,19 +181,22 @@ def main():
     for name, default in [('iterations', 2), ('parties', 4), ('epochs', 3),
                           ('simulations', 8), ('paires', 2), ('seed', 42), ('demi_coups', 0)]:
         parser.add_argument('--' + name.replace('_', '-'), type=int, default=default)
+    parser.add_argument('--cachees', type=int, default=32, help='taille de la couche cachée')
+    parser.add_argument('--cible', choices=['resultat', 'marge'], default='resultat',
+                        help='cible de value : résultat de la partie, ou écart de matériel final')
     parser.add_argument('--output', type=Path, default=Path('resultats/selfplay'))
     args = parser.parse_args()
-    if min(args.iterations, args.parties, args.epochs, args.simulations, args.paires) < 1 or min(args.seed, args.demi_coups) < 0:
+    if min(args.iterations, args.parties, args.epochs, args.simulations, args.paires, args.cachees) < 1 or min(args.seed, args.demi_coups) < 0:
         parser.error('Les quantités doivent être positives et la graine positive ou nulle.')
     args.output.mkdir(parents=True, exist_ok=True)
-    network = Network(args.seed)
+    network = Network(args.seed, args.cachees)
     rng = random.Random(args.seed)
     seed = args.seed
     examples = []
     with gzip.open(args.output / 'positions.jsonl.gz', 'wt', encoding='utf-8') as stream:
         for iteration in range(args.iterations):
             for _ in range(args.parties):
-                record = self_play(network, args.simulations, seed, args.demi_coups)
+                record = self_play(network, args.simulations, seed, args.demi_coups, args.cible)
                 print(json.dumps(dict(iteration=iteration + 1, **record)), file=stream)
                 examples.extend(example(row) for row in record['positions'])
                 seed += 1

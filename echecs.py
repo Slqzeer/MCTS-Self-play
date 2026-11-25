@@ -18,6 +18,12 @@ from mcts import mcts_move
 VALUES = {chess.PAWN: 1, chess.KNIGHT: 3, chess.BISHOP: 3, chess.ROOK: 5, chess.QUEEN: 9}
 
 
+def material(board):
+    """Matériel des blancs moins celui des noirs."""
+    return sum(VALUES.get(p.piece_type, 0) * (1 if p.color else -1)
+               for p in board.piece_map().values())
+
+
 class ChessGame:
     def __init__(self, board=None, max_plies=0):
         """max_plies > 0 : la partie s'arrête après ce nombre de demi-coups et le matériel tranche."""
@@ -29,8 +35,7 @@ class ChessGame:
         outcome = self.board.outcome()
         if outcome or not self.max_plies or len(self.board.move_stack) < self.max_plies:
             return outcome
-        balance = sum(VALUES.get(p.piece_type, 0) * (1 if p.color else -1)
-                      for p in self.board.piece_map().values())
+        balance = material(self.board)
         if balance == 0:
             return chess.Outcome(chess.Termination.VARIANT_DRAW, None)
         return chess.Outcome(chess.Termination.VARIANT_WIN, balance > 0)

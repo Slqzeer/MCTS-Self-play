@@ -1,3 +1,4 @@
+import math
 import random
 import unittest
 
@@ -8,7 +9,8 @@ except ModuleNotFoundError:
     raise unittest.SkipTest("Installer chess et NumPy pour tester le self-play.")
 
 from echecs import ChessGame
-from selfplay import Network, example, search
+from echecs import material
+from selfplay import Network, example, search, self_play
 
 
 class SelfPlayTests(unittest.TestCase):
@@ -25,6 +27,17 @@ class SelfPlayTests(unittest.TestCase):
             self.assertFalse(position.move_stack)
             game.play(max(visits, key=visits.get))
             self.assertTrue(game.board.is_checkmate())
+
+    def test_margin_target_follows_final_material_for_side_to_move(self):
+        record = self_play(Network(0), 2, 3, max_plies=12, target='marge')
+        board = chess.Board()
+        for row in record['positions']:
+            board.push_uci(row['coup'])
+        values = [row['value'] for row in record['positions']]
+        expected = math.tanh(material(board) / 3)
+        self.assertEqual(len(values), 12)
+        self.assertAlmostEqual(values[0], expected)
+        self.assertAlmostEqual(values[1], -expected)
 
     def test_fit_learns_visit_target_and_negative_outcome(self):
         row = dict(fen=chess.STARTING_FEN, visites={'e2e4': 3, 'd2d4': 1}, value=-1)

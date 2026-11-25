@@ -20,7 +20,7 @@ INK, MUTED, SURFACE = '#0b0b0b', '#898781', '#fcfcfb'
 def control(params):
     """Même tournoi que la campagne, avec le réseau initial non entraîné."""
     first = params['seed'] + params['iterations'] * params['parties']
-    network = Network(params['seed'])
+    network = Network(params['seed'], params.get('cachees', 32))
     records = [match(network, params['simulations'], seed, color, params['demi_coups'])
                for seed in range(first, first + params['paires'])
                for color in (chess.WHITE, chess.BLACK)]
