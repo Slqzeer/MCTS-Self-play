@@ -89,3 +89,13 @@ uv run --with chess==1.11.2 --with numpy==2.3.4 python -c "import chess; from se
 | Réseau après 10 itérations de self-play | 81 | 5 | 14 | **83,5** |
 
 **Lecture.** L’entraînement fait passer le score de 59,5 à 83,5 points. L’écart de 24 points dépasse largement l’incertitude d’un échantillon de 100 parties (environ ±7 à ±10 points à 95 %). Le réseau entraîné marque 42 points sur 50 avec les blancs et 41,5 sur 50 avec les noirs. Il prend en moyenne 14,3 ms par coup, contre 98,5 ms pour les rollouts. Ce résultat porte sur une variante où le matériel décide de la partie. Il ne dit pas que l’agent saurait mater aux échecs complets.
+
+## Échecs · jouer contre l’agent
+
+```sh
+uv run jouer_echecs.py                                     # humain (blancs) contre le réseau entraîné, horizon 60
+uv run jouer_echecs.py --couleur noirs --agent rollouts    # humain (noirs) contre le MCTS à rollouts
+uv run jouer_echecs.py --demi-coups 0 --simulations 200    # échecs standard, sans limite de demi-coups
+```
+
+Saisir les coups en notation algébrique (`e4`, `Nf3`, `O-O`) ou en UCI (`e2e4`). Un coup illégal est refusé. Par défaut, le réseau charge les poids de `resultats/selfplay-60/reseau.npz`. L’option `--poids` en désigne d’autres.
