@@ -36,14 +36,36 @@ Depuis la racine du dépôt, lancer le tournoi avec uv, qui prépare Python et M
 uv run benchmark.py
 ```
 
-Le protocole par défaut compare 4, 16 et 64 simulations par coup pour deux constantes UCB1 (0,5 et √2). Chaque réglage utilise les mêmes dix graines (42 à 51). Pour chaque graine, MCTS joue une fois en premier et une fois en second, avec un générateur aléatoire distinct pour chaque agent. Cela donne 20 parties par réglage et 120 au total.
+Le protocole par défaut compare 16, 64 et 256 simulations par coup pour huit constantes UCB1 (0 ; 0,25 ; 0,5 ; 1 ; √2 ; 2 ; 3 ; 4). Chaque réglage utilise les mêmes 50 graines (42 à 91). Pour chaque graine, MCTS joue une fois en premier et une fois en second, avec un générateur aléatoire distinct pour chaque agent. Cela donne 100 parties par réglage et 2 400 au total. En dessous de sept simulations, la racine n’a pas fini d’essayer ses sept coups et C n’intervient jamais : ces budgets ne disent rien sur C. Les parties tournent en parallèle sur tous les cœurs.
 
-Le [graphique](resultats/hyperparametres.png) présente le pourcentage de victoires parmi toutes les parties et le temps moyen par décision MCTS. Le [tableau de synthèse](resultats/synthese.csv) donne aussi les nuls et les défaites. Le [journal des parties](resultats/parties.jsonl) contient les paramètres, la graine, le numéro du joueur MCTS, l’issue de son point de vue et la durée de chacun de ses coups en millisecondes. À version de Python identique, les graines permettent de rejouer les parties. Les durées varient avec la machine et sa charge.
+Contre l’aléatoire, MCTS gagne presque toujours dès 16 simulations, ce qui masque l’effet de C. Une seconde campagne l’oppose donc à un MCTS de référence (C = √2, même budget). À C = √2, les deux agents sont identiques, donc le score attendu est 50 %.
+
+```sh
+uv run benchmark.py --adversaire mcts --output resultats/exploration-mcts
+```
+
+Le [graphique](resultats/hyperparametres.png) présente le pourcentage de victoires en fonction de C, avec son intervalle de confiance à 95 % (Wilson), ainsi que le temps moyen par décision MCTS. Si les intervalles de deux réglages ne se chevauchent pas, l’écart est significatif. Le [tableau de synthèse](resultats/synthese.csv) donne aussi les nuls, les défaites et le score (une victoire vaut 1, un nul 0,5). Le [journal des parties](resultats/parties.jsonl) contient les paramètres, la graine, le numéro du joueur MCTS, l’issue de son point de vue et la durée de chacun de ses coups en millisecondes. À version de Python identique, les graines permettent de rejouer les parties. Les durées varient avec la machine et sa charge. Comme les parties tournent en parallèle, elles servent d’ordre de grandeur, pas de comparaison fine entre valeurs de C.
+
+### Résultats sur C (100 parties par réglage)
+
+Contre l’aléatoire, le test ne permet pas de départager les valeurs de C. Dès 64 simulations, tous les réglages gagnent au moins 95 % des parties. À 16 simulations, seules les valeurs C ≥ 3 sont nettement moins bonnes (72 à 74 % contre 86 à 92 %).
+
+Contre le MCTS de référence ([graphique](resultats/exploration-mcts/hyperparametres.png), [tableau](resultats/exploration-mcts/synthese.csv)), l’effet de C est net et dépend du budget :
+
+| Simulations | C = 0 | C = 0,5 | C = 1 | C = √2 | C = 2 | C = 4 |
+|---|---|---|---|---|---|---|
+| 16 | 60 % | 53 % | 48 % | 50 % | 40 % | **26 %** |
+| 64 | **34 %** | 50 % | 53 % | 49 % | 48 % | 37 % |
+| 256 | **10 %** | 55 % | 49 % | 48 % | **34 %** | 39 % |
+
+- **Trop explorer pénalise surtout à petit budget.** À 16 simulations, C ≥ 3 ne gagne que 26 % des parties (IC 95 % : 18 à 35 %). L’agent répartit ses rares simulations au lieu de creuser les bons coups.
+- **Ne pas explorer devient catastrophique quand le budget grandit.** À C = 0, le taux de victoire passe de 60 % à 16 simulations à 34 % à 64, puis à 10 % à 256. L’agent s’enferme dans le premier coup qui a gagné un rollout, et les simulations supplémentaires ne l’aident pas.
+- **La zone 0,5 à √2 est un plateau.** Pour aucun budget, ces valeurs ne se distinguent significativement de √2 avec 100 parties. Sur Puissance 4, la valeur théorique √2 est donc un choix sûr, et rien ne montre qu’une autre valeur la bat.
 
 Pour augmenter l’échantillon ou modifier la grille, choisir un autre dossier de sortie pour conserver les mesures précédentes.
 
 ```sh
-uv run benchmark.py --simulations 16 64 256 --exploration 0.5 1 2 --paires 50 --seed 100 --output resultats-50
+uv run benchmark.py --simulations 16 64 256 --exploration 0.5 1 2 --paires 200 --seed 100 --output resultats-200
 ```
 
 ## Échecs · mesurer le coût du self-play
